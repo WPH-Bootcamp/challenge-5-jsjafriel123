@@ -4,6 +4,9 @@ exports.addBook = addBook;
 exports.listBooks = listBooks;
 exports.searchBook = searchBook;
 var prompt = require("prompt-sync")({ sigint: true });
+var fs = require("fs"); // Prerequsite for JSON file Read - Write
+var path = require("path"); // Prerequsite for absolute path of the JSON file
+var my_Books_Path = path.join(__dirname, "my_Books.json");
 // 2. Create `books` array to store books
 var myBooks = [];
 var myBook = {
@@ -29,29 +32,43 @@ function listBooks() {
     else {
         console.log("All Books:");
         myBooks.map(function (parameter) {
-            return console.log("> - ".concat(parameter.title, " by ").concat(parameter.author, " (").concat(parameter.year, ")"));
+            return console.log("- ".concat(parameter.title, " by ").concat(parameter.author, " (").concat(parameter.year, ")"));
         });
     }
 }
-// 5. Implement a function named `searchBook` to find books by title (should be an optional parameter)
-function searchBook(keyWord) {
-    console.log("Search Results for \"".concat(keyWord, "\":"));
+// 5. Implement a function named `searchBook` to find books by title (should be an optional parameter) ==> Optional by initializing the parameter.
+function searchBook(searchKey) {
+    var _a;
+    if (searchKey === void 0) { searchKey = ""; }
+    if (searchKey == "" || searchKey == " ") {
+        console.log("Please provide a title to search.");
+        searchKey = prompt("Enter Title Key Word: ", "");
+        (_a = searchKey.trim()) !== null && _a !== void 0 ? _a : "";
+    }
+    console.log("Search Results for \"".concat(searchKey, "\":"));
     var searchResult = myBooks.filter(function (book) {
-        var _a;
-        return book.title.toLowerCase().includes((_a = keyWord === null || keyWord === void 0 ? void 0 : keyWord.toLowerCase()) !== null && _a !== void 0 ? _a : "");
+        return book.title.includes(searchKey !== null && searchKey !== void 0 ? searchKey : "");
     });
     if (searchResult.length == 0) {
-        console.log("Not found!");
+        console.log("No books found with title containing \"".concat(searchKey, "\"."));
     }
     else {
         searchResult.map(function (parameter) {
-            return console.log("> - ".concat(parameter.title, " by ").concat(parameter.author, " (").concat(parameter.year, ")"));
+            return console.log("- ".concat(parameter.title, " by ").concat(parameter.author, " (").concat(parameter.year, ")"));
         });
     }
 }
 // 6. All functions must return void
 var running = true;
 var inMenu = "";
+// Read previous records from JSON file
+try {
+    var rawData = fs.readFileSync(my_Books_Path, "utf-8");
+    myBooks = JSON.parse(rawData);
+}
+catch (error) {
+    myBooks = [];
+}
 while (running) {
     while (inMenu == "") {
         console.log("-------------------");
@@ -83,21 +100,16 @@ while (running) {
                     inMenu = "";
                     break;
                 case "3": // Search Book
-                    var keyWord = "";
-                    while (keyWord == "") {
-                        keyWord = prompt("Key word (Title): ", "");
-                        keyWord.trim();
-                        if (keyWord == "" || keyWord == " ") {
-                            console.log("Please provide a title to search.");
-                            keyWord = "";
-                        }
-                        else {
-                            searchBook(keyWord);
-                        }
-                    }
+                    // Call without any parameter (optional)
+                    searchBook();
                     inMenu = "";
                     break;
                 case "4": // Exit App
+                    // Write existing records in JSON file, for future use.
+                    if (myBooks.length !== 0) {
+                        var dataString = JSON.stringify(myBooks, null, 2);
+                        fs.writeFileSync(my_Books_Path, dataString);
+                    }
                     console.log("Thank you for using this application...");
                     running = false; // Stop running
             }

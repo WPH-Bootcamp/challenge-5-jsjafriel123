@@ -1,5 +1,8 @@
 "use strict";
 const prompt = require("prompt-sync")({ sigint: true });
+import * as fs from "fs"; // Prerequsite for JSON file Read - Write
+import * as path from "path"; // Prerequsite for absolute path of the JSON file
+const my_Books_Path = path.join(__dirname, "my_Books.json");
 
 // 1. Create a type for `book` where each book has a title, author, and publication year
 type book = {
@@ -36,24 +39,30 @@ function listBooks(): void {
     console.log("All Books:");
     myBooks.map((parameter) =>
       console.log(
-        `> - ${parameter.title} by ${parameter.author} (${parameter.year})`
+        `- ${parameter.title} by ${parameter.author} (${parameter.year})`
       )
     );
   }
 }
 
-// 5. Implement a function named `searchBook` to find books by title (should be an optional parameter)
-function searchBook(keyWord?: string): void {
-  console.log(`Search Results for "${keyWord}":`);
+// 5. Implement a function named `searchBook` to find books by title (should be an optional parameter) ==> Optional by initializing the parameter.
+function searchBook(searchKey: string = ""): void {
+  if (searchKey == "" || searchKey == " ") {
+    console.log("Please provide a title to search.");
+    searchKey = prompt("Enter Title Key Word: ", "");
+    searchKey.trim() ?? "";
+  }
+
+  console.log(`Search Results for "${searchKey}":`);
   const searchResult: book[] = myBooks.filter((book) => {
-    return book.title.toLowerCase().includes(keyWord?.toLowerCase() ?? "");
+    return book.title.includes(searchKey ?? "");
   });
   if (searchResult.length == 0) {
-    console.log("Not found!");
+    console.log(`No books found with title containing "${searchKey}".`);
   } else {
     searchResult.map((parameter) =>
       console.log(
-        `> - ${parameter.title} by ${parameter.author} (${parameter.year})`
+        `- ${parameter.title} by ${parameter.author} (${parameter.year})`
       )
     );
   }
@@ -62,6 +71,14 @@ function searchBook(keyWord?: string): void {
 
 let running = true;
 let inMenu = "";
+
+// Read previous records from JSON file
+try {
+  const rawData = fs.readFileSync(my_Books_Path, "utf-8");
+  myBooks = JSON.parse(rawData);
+} catch (error) {
+  myBooks = [];
+}
 
 while (running) {
   while (inMenu == "") {
@@ -96,21 +113,16 @@ while (running) {
           inMenu = "";
           break;
         case "3": // Search Book
-          let keyWord = "";
-
-          while (keyWord == "") {
-            keyWord = prompt("Key word (Title): ", "");
-            keyWord.trim();
-            if (keyWord == "" || keyWord == " ") {
-              console.log("Please provide a title to search.");
-              keyWord = "";
-            } else {
-              searchBook(keyWord);
-            }
-          }
+          // Call without any parameter (optional)
+          searchBook();
           inMenu = "";
           break;
         case "4": // Exit App
+          // Write existing records in JSON file, for future use.
+          if (myBooks.length !== 0) {
+            const dataString = JSON.stringify(myBooks, null, 2);
+            fs.writeFileSync(my_Books_Path, dataString);
+          }
           console.log("Thank you for using this application...");
           running = false; // Stop running
       }
